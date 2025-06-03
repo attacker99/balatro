@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module CardsSpec where
 
 import Cards
@@ -20,7 +18,7 @@ spec = do
             c1 `shouldBe` c2
 
         it "stone cards only equal to other stone cards" $ do
-            let c1 = (mkBaseCard Ace Spade){enhancement = Stone}
+            let c1 = StoneCard 1 Base Nothing
             let c2 = (mkBaseCard Ace Spade)
             c1 `shouldNotBe` c2
             c1 `shouldBe` c1
@@ -43,7 +41,7 @@ spec = do
 
     describe "Enhancement checkers" $ do
         let wildCard = (mkBaseCard Ten Heart){enhancement = Wild}
-        let stoneCard = (mkBaseCard Five Spade){enhancement = Stone}
+        let stoneCard = StoneCard 1 Base Nothing
         let plainCard = mkBaseCard Two Club
 
         it "isWild detects Wild enhancement" $ do
@@ -54,3 +52,4 @@ spec = do
         it "isStone detects Stone enhancement" $ do
             isStone stoneCard `shouldBe` True
             isStone wildCard `shouldBe` False
+            isStone plainCard `shouldBe` False

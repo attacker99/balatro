@@ -1,8 +1,8 @@
 module HandTypeTest where
 
-import Test.Hspec
-import HandType (getHandType, HandType(..))
 import Cards
+import HandType (HandType (..), getHandType)
+import Test.Hspec
 
 spec :: Spec
 spec = do
@@ -90,11 +90,11 @@ spec = do
             getHandType [mkBaseCard Two Heart, mkBaseCard Four Heart, mkBaseCard Seven Heart, mkBaseCard Queen Heart] 4 1 `shouldBe` Flush
 
         it "detects 4-card straight flush" $ do
-            let cards = [mkBaseCard King Spade, mkBaseCard Queen Spade, mkBaseCard Ace Spade, mkBaseCard Jack Heart, Card Four Spade None Base Nothing]
+            let cards = [mkBaseCard King Spade, mkBaseCard Queen Spade, mkBaseCard Ace Spade, mkBaseCard Jack Heart, NormalCard Four Spade 1 None Base Nothing]
             getHandType cards 4 2 `shouldBe` StraightFlush
 
         it "detects 4-card straight flush with distance 2" $ do
-            let cards = [mkBaseCard Two Spade, mkBaseCard Six Diamond, mkBaseCard Ten Diamond, mkBaseCard King Spade, mkBaseCard Ace Spade, mkBaseCard Jack Heart, Card Four Spade None Base Nothing]
+            let cards = [mkBaseCard Two Spade, mkBaseCard Six Diamond, mkBaseCard Ten Diamond, mkBaseCard King Spade, mkBaseCard Ace Spade, mkBaseCard Jack Heart, NormalCard Four Spade 1 None Base Nothing]
             getHandType cards 4 2 `shouldBe` StraightFlush
 
         it "detects 4-card straight flush with distance 2 (unsorted)" $ do
@@ -107,47 +107,47 @@ spec = do
     describe "Special Cases" $ do
         describe "flush house" $ do
             it "detects flush house with fs_sz = 4" $ do
-                let hand = [Card Ace Spade None Base Nothing, Card Ace Spade None Base Nothing, Card Ace Diamond None Base Nothing, Card King Spade None Base Nothing, Card King Spade None Base Nothing]
+                let hand = [NormalCard Ace Spade 1 None Base Nothing, NormalCard Ace Spade 1 None Base Nothing, NormalCard Ace Diamond 1 None Base Nothing, NormalCard King Spade 1 None Base Nothing, NormalCard King Spade 1 None Base Nothing]
                 getHandType hand 4 1 `shouldBe` FlushHouse
 
-            it "detects flush house with wild cards" $ do
-                let hand = [Card Ace Spade None Base Nothing, Card Ace Spade None Base Nothing, Card Ace Spade None Base Nothing, Card King Spade None Base Nothing, Card King Diamond Wild Base Nothing]
+            it "detects flush house with 1 Wild cards" $ do
+                let hand = [NormalCard Ace Spade 1 None Base Nothing, NormalCard Ace Spade 1 None Base Nothing, NormalCard Ace Spade 1 None Base Nothing, NormalCard King Spade 1 None Base Nothing, NormalCard King Diamond 1 Wild Base Nothing]
                 getHandType hand 5 1 `shouldBe` FlushHouse
 
-        describe "straight flush with wild cards" $ do
-            it "detects 5-card straight flush with 1 wild" $ do
-                let hand = [Card Six Spade None Base Nothing, Card Seven Spade None Base Nothing, Card Eight Spade None Base Nothing, Card Nine Spade None Base Nothing, Card Ten Diamond Wild Base Nothing]
+        describe "straight flush with 1 Wild NormalCards" $ do
+            it "detects 5-NormalCard straight flush with 1 wild" $ do
+                let hand = [NormalCard Six Spade 1 None Base Nothing, NormalCard Seven Spade 1 None Base Nothing, NormalCard Eight Spade 1 None Base Nothing, NormalCard Nine Spade 1 None Base Nothing, NormalCard Ten Diamond 1 Wild Base Nothing]
                 getHandType hand 5 1 `shouldBe` StraightFlush
 
-            it "detects 4-card straight flush with 1 wild" $ do
-                let hand = [Card Six Heart None Base Nothing, Card Seven Heart None Base Nothing, Card Eight Heart None Base Nothing, Card Nine Heart Wild Base Nothing]
+            it "detects 4-NormalCard straight flush with 1 wild" $ do
+                let hand = [NormalCard Six Heart 1 None Base Nothing, NormalCard Seven Heart 1 None Base Nothing, NormalCard Eight Heart 1 None Base Nothing, NormalCard Nine Heart 1 Wild Base Nothing]
                 getHandType hand 4 1 `shouldBe` StraightFlush
 
-            it "detects 5-card straight flush with 2 wild" $ do
-                let hand = [Card Six Spade None Base Nothing, Card Seven Spade None Base Nothing, Card Eight Spade None Base Nothing, Card Nine Spade Wild Base Nothing, Card Ten Spade Wild Base Nothing]
+            it "detects 5-NormalCard straight flush with 2 wild" $ do
+                let hand = [NormalCard Six Spade 1 None Base Nothing, NormalCard Seven Spade 1 None Base Nothing, NormalCard Eight Spade 1 None Base Nothing, NormalCard Nine Spade 1 Wild Base Nothing, NormalCard Ten Spade 1 Wild Base Nothing]
                 getHandType hand 5 2 `shouldBe` StraightFlush
 
-            it "detects 4-card straight flush with 2 wild" $ do
-                let hand = [Card Six Heart None Base Nothing, Card Seven Heart None Base Nothing, Card Eight Heart Wild Base Nothing, Card Nine Heart Wild Base Nothing]
+            it "detects 4-NormalCard straight flush with 2 wild" $ do
+                let hand = [NormalCard Six Heart 1 None Base Nothing, NormalCard Seven Heart 1 None Base Nothing, NormalCard Eight Heart 1 Wild Base Nothing, NormalCard Nine Heart 1 Wild Base Nothing]
                 getHandType hand 4 2 `shouldBe` StraightFlush
 
         describe "normal straight/straight flush" $ do
-            it "detects 5-card straight flush with 2 wild" $ do
-                let hand = [Card Five Spade None Base Nothing, Card Seven Spade None Base Nothing, Card Eight Spade None Base Nothing, Card Ten Diamond Wild Base Nothing, Card Queen Diamond Wild Base Nothing]
+            it "detects 5-NormalCard straight flush with 2 wild" $ do
+                let hand = [NormalCard Five Spade 1 None Base Nothing, NormalCard Seven Spade 1 None Base Nothing, NormalCard Eight Spade 1 None Base Nothing, NormalCard Ten Diamond 1 Wild Base Nothing, NormalCard Queen Diamond 1 Wild Base Nothing]
                 getHandType hand 5 2 `shouldBe` StraightFlush
 
-            it "detects 4-card straight flush with 2 wild" $ do
-                let hand = [Card Three Heart None Base Nothing, Card Nine Heart None Base Nothing, Card Five Heart Wild Base Nothing, Card Queen Spade Wild Base Nothing, Card Seven Spade None Base Nothing]
+            it "detects 4-NormalCard straight flush with 2 wild" $ do
+                let hand = [NormalCard Three Heart 1 None Base Nothing, NormalCard Nine Heart 1 None Base Nothing, NormalCard Five Heart 1 Wild Base Nothing, NormalCard Queen Spade 1 Wild Base Nothing, NormalCard Seven Spade 1 None Base Nothing]
                 getHandType hand 4 2 `shouldBe` StraightFlush
 
-            it "detects 4-card ace-low straight flush with 2 wild" $ do
-                let hand = [Card Three Heart None Base Nothing, Card Ace Heart None Base Nothing, Card Five Heart Wild Base Nothing, Card Queen Spade Wild Base Nothing, Card Seven Spade None Base Nothing]
+            it "detects 4-NormalCard ace-low straight flush with 2 wild" $ do
+                let hand = [NormalCard Three Heart 1 None Base Nothing, NormalCard Ace Heart 1 None Base Nothing, NormalCard Five Heart 1 Wild Base Nothing, NormalCard Queen Spade 1 Wild Base Nothing, NormalCard Seven Spade 1 None Base Nothing]
                 getHandType hand 4 2 `shouldBe` StraightFlush
 
-            it "detects 5-card straight with 2 wild" $ do
-                let hand = [Card Five Spade None Base Nothing, Card Seven Club None Base Nothing, Card Eight Spade None Base Nothing, Card Nine Spade Wild Base Nothing, Card Jack Diamond Wild Base Nothing]
+            it "detects 5-NormalCard straight with 2 wild" $ do
+                let hand = [NormalCard Five Spade 1 None Base Nothing, NormalCard Seven Club 1 None Base Nothing, NormalCard Eight Spade 1 None Base Nothing, NormalCard Nine Spade 1 Wild Base Nothing, NormalCard Jack Diamond 1 Wild Base Nothing]
                 getHandType hand 5 2 `shouldBe` Straight
 
-            it "detects 4-card straight with 2 wild" $ do
-                let hand = [Card Eight Heart None Base Nothing, Card Ten Spade None Base Nothing, Card Queen Heart Wild Base Nothing, Card Ace Heart Wild Base Nothing]
+            it "detects 4-NormalCard straight with 2 wild" $ do
+                let hand = [NormalCard Eight Heart 1 None Base Nothing, NormalCard Ten Spade 1 None Base Nothing, NormalCard Queen Heart 1 Wild Base Nothing, NormalCard Ace Heart 1 Wild Base Nothing]
                 getHandType hand 4 2 `shouldBe` Straight

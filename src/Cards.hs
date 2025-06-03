@@ -1,8 +1,10 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Cards (
     Rank (..),
@@ -23,12 +25,12 @@ module Cards (
 )
 where
 
+import Data.Aeson (FromJSON, ToJSON)
+import Data.Hashable (Hashable)
 import Data.Ord (comparing)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
-import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
-import Data.Aeson (ToJSON, FromJSON)
 
 data Rank
     = One
@@ -61,7 +63,6 @@ data Enhancement
     | Wild
     | Glass
     | Steel
-    | Stone
     | Gold
     | Lucky
     deriving (Bounded, Enum, Eq, Read, Show, Generic, Hashable, ToJSON, FromJSON)
@@ -80,25 +81,30 @@ data Seal
     | Purple
     deriving (Bounded, Enum, Eq, Read, Show, Generic, Hashable, ToJSON, FromJSON)
 
-data Card = Card
-    { rank :: Rank
-    , suit :: Suit
-    , enhancement :: Enhancement
-    , edition :: Edition
-    , seal :: Maybe Seal
-    }
+data Card
+    = StoneCard
+        { quantity :: Int
+        , edition :: Edition
+        , seal :: Maybe Seal
+        }
+    | NormalCard
+        { rank :: Rank
+        , suit :: Suit
+        , quantity :: Int
+        , enhancement :: Enhancement
+        , edition :: Edition
+        , seal :: Maybe Seal
+        }
     deriving (Read, Show, Generic, Hashable, ToJSON, FromJSON)
 
 instance Eq Card where
     (==) :: Card -> Card -> Bool
-    Card r s ehmnt _ _ == Card r' s' ehmnt' _ _ =
-        case ehmnt of
-            Stone -> ehmnt' == Stone
-            Wild -> r == r'
-            _ -> case ehmnt' of
-                Stone -> False
-                Wild -> r == r'
-                _ -> r == r' && s == s'
+    StoneCard{} == StoneCard{} = True
+    StoneCard{} == NormalCard{} = False
+    NormalCard{} == StoneCard{} = False
+    NormalCard{enhancement = e1, rank = r1, suit = s1} == NormalCard{enhancement = e2, rank = r2, suit = s2}
+        | e1 == Wild || e2 == Wild = r1 == r2
+        | otherwise = r1 == r2 && s1 == s2
 
 instance Ord Card where
     compare :: Card -> Card -> Ordering
@@ -106,7 +112,8 @@ instance Ord Card where
 
 instance Enum Card where
     fromEnum :: Card -> Int
-    fromEnum (Card r s _ _ _) = fromEnum s * 13 + fromEnum r
+    fromEnum (NormalCard r s _ _ _ _) = fromEnum s * 13 + fromEnum r
+    fromEnum StoneCard{} = 52
 
     toEnum :: Int -> Card
     toEnum n = let (s, r) = n `divMod` 13 in mkBaseCard (toEnum r) (toEnum s)
@@ -120,7 +127,7 @@ allSuits :: [Suit]
 allSuits = [Spade .. Diamond]
 
 mkBaseCard :: Rank -> Suit -> Card
-mkBaseCard r s = Card r s None Base Nothing
+mkBaseCard r s = NormalCard{rank = r, suit = s, quantity = 1, enhancement = None, edition = Base, seal = Nothing}
 
 stdDeck :: Deck
 stdDeck =
@@ -145,18 +152,22 @@ checkeredSuits :: [Suit]
 checkeredSuits = [Spade, Heart]
 
 checkeredDeck :: Vector Card
-checkeredDeck = V.fromList
+checkeredDeck =
+    V.fromList
         [ mkBaseCard r s
         | r <- allRanks
         , s <- checkeredSuits
         ]
 
 isEnhanced :: Enhancement -> Card -> Bool
-isEnhanced property =
-    (== property) . enhancement
+isEnhanced property = \case
+    StoneCard{} -> False
+    NormalCard{enhancement = e} -> e == property
 
 isWild :: Card -> Bool
 isWild = isEnhanced Wild
 
 isStone :: Card -> Bool
-isStone = isEnhanced Stone
+isStone = \case
+    StoneCard{} -> True
+    _ -> False

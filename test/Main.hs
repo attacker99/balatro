@@ -1,8 +1,14 @@
+module Main where
+
+import Test.Hspec
+import CardParserSpec
 import CardsSpec
 import HandTypeTest
-import Test.Hspec
+import SimulateSpec
 
 main :: IO ()
 main = hspec $ do
-    CardsSpec.spec
-    HandTypeTest.spec
+    describe "CardParser" CardParserSpec.spec
+    describe "Cards" CardsSpec.spec
+    describe "HandType" HandTypeTest.spec
+    describe "Simulate" SimulateSpec.spec
