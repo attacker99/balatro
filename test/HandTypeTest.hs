@@ -19,14 +19,59 @@ spec = do
         it "detects three of a kind" $ do
             getHandType [mkBaseCard Two Heart, mkBaseCard Two Diamond, mkBaseCard Two Club, mkBaseCard Four Spade, mkBaseCard Five Heart] 5 1 `shouldBe` ThreeKind
 
+        it "detects three of a kind with quantity" $ do
+            getHandType [NormalCard Two Spade 3 None Base Nothing] 5 1 `shouldBe` ThreeKind
+
+        it "detects three of a kind wilds" $ do
+            getHandType [NormalCard Two Spade 2 Wild Base Nothing, NormalCard Two Heart 1 None Base Nothing] 5 1 `shouldBe` ThreeKind
+
         it "detects four of a kind" $ do
             getHandType [mkBaseCard Two Heart, mkBaseCard Two Diamond, mkBaseCard Two Club, mkBaseCard Two Spade, mkBaseCard Three Heart] 5 1 `shouldBe` FourKind
 
         it "detects five of a kind" $ do
             getHandType [mkBaseCard Two Heart, mkBaseCard Two Diamond, mkBaseCard Two Club, mkBaseCard Two Spade, mkBaseCard Two Heart] 5 1 `shouldBe` FiveKind
 
+        it "detects five of a kind with quantity" $ do
+            getHandType [NormalCard Two Spade 5 None Base Nothing] 5 1 `shouldBe` FlushFive
+
+        it "detects five of a kind with wilds" $ do
+            getHandType [NormalCard Two Spade 3 Wild Base Nothing, NormalCard Two Heart 2 None Base Nothing] 5 1 `shouldBe` FlushFive
+
+        it "detects five of a kind with mixed wilds and quantity" $ do
+            getHandType [NormalCard Two Spade 3 None Base Nothing, NormalCard Two Heart 1 Wild Base Nothing, NormalCard Two Diamond 1 Wild Base Nothing] 5 1 `shouldBe` FlushFive
+
+        it "detects four of a kind with quantity" $ do
+            getHandType [NormalCard Two Spade 4 None Base Nothing, mkBaseCard Three Heart] 5 1 `shouldBe` FourKind
+
+        it "detects four of a kind with wilds" $ do
+            getHandType [NormalCard Two Spade 2 Wild Base Nothing, NormalCard Two Heart 2 None Base Nothing, mkBaseCard Three Heart] 5 1 `shouldBe` FourKind
+
+        it "detects four of a kind with mixed wilds and quantity" $ do
+            getHandType [NormalCard Two Spade 2 None Base Nothing, NormalCard Two Heart 1 Wild Base Nothing, NormalCard Two Diamond 1 Wild Base Nothing, mkBaseCard Three Heart] 5 1 `shouldBe` FourKind
+
         it "detects full house" $ do
             getHandType [mkBaseCard Two Heart, mkBaseCard Two Diamond, mkBaseCard Two Club, mkBaseCard Three Spade, mkBaseCard Three Heart] 5 1 `shouldBe` FullHouse
+
+        it "detects full house" $ do
+            getHandType [NormalCard Two Spade 2 None Base Nothing, NormalCard Three Heart 1 None Base Nothing, NormalCard Three Diamond 1 None Base Nothing, NormalCard Two Club 1 None Base Nothing] 5 1 `shouldBe` FullHouse
+
+        it "detects flush five" $ do
+            getHandType [mkBaseCard Two Heart, mkBaseCard Two Heart, mkBaseCard Two Heart, mkBaseCard Two Heart, mkBaseCard Two Heart] 5 1 `shouldBe` FlushFive
+
+        it "detects flush five" $ do
+            getHandType [NormalCard Two Heart 4 None Base Nothing, mkBaseCard Two Spade] 4 1 `shouldBe` FlushFive
+
+        it "detects flush five with quantity" $ do
+            getHandType [NormalCard Two Heart 5 None Base Nothing] 5 1 `shouldBe` FlushFive
+
+        it "detects flush five with wilds" $ do
+            getHandType [NormalCard Two Heart 3 Wild Base Nothing, NormalCard Two Heart 2 None Base Nothing] 5 1 `shouldBe` FlushFive
+
+        it "detects flush five with mixed wilds and quantity" $ do
+            getHandType [NormalCard Two Heart 3 None Base Nothing, NormalCard Two Heart 1 Wild Base Nothing, NormalCard Two Heart 1 Wild Base Nothing] 5 1 `shouldBe` FlushFive
+
+        it "detects flush house" $ do
+            getHandType [mkBaseCard Two Heart, mkBaseCard Two Heart, mkBaseCard Two Heart, mkBaseCard Three Heart, mkBaseCard Three Heart] 5 1 `shouldBe` FlushHouse
 
     describe "Straight Hands" $ do
         it "detects regular straight" $ do
@@ -50,9 +95,6 @@ spec = do
     describe "Flush Hands" $ do
         it "detects regular flush" $ do
             getHandType [mkBaseCard Two Heart, mkBaseCard Four Heart, mkBaseCard Seven Heart, mkBaseCard Nine Heart, mkBaseCard Queen Heart] 5 1 `shouldBe` Flush
-
-        it "detects flush five" $ do
-            getHandType [mkBaseCard Two Heart, mkBaseCard Two Heart, mkBaseCard Two Heart, mkBaseCard Two Heart, mkBaseCard Two Heart] 5 1 `shouldBe` FlushFive
 
         it "detects flush house" $ do
             getHandType [mkBaseCard Two Heart, mkBaseCard Two Heart, mkBaseCard Two Heart, mkBaseCard Three Heart, mkBaseCard Three Heart] 5 1 `shouldBe` FlushHouse
@@ -110,6 +152,10 @@ spec = do
                 let hand = [NormalCard Ace Spade 1 None Base Nothing, NormalCard Ace Spade 1 None Base Nothing, NormalCard Ace Diamond 1 None Base Nothing, NormalCard King Spade 1 None Base Nothing, NormalCard King Spade 1 None Base Nothing]
                 getHandType hand 4 1 `shouldBe` FlushHouse
 
+            it "detects flush house with fs_sz = 4" $ do
+                let hand = [NormalCard Ace Spade 2 None Base Nothing, NormalCard King Spade 2 None Base Nothing, mkBaseCard Ace Diamond]
+                getHandType hand 4 1 `shouldBe` FlushHouse
+
             it "detects flush house with 1 Wild cards" $ do
                 let hand = [NormalCard Ace Spade 1 None Base Nothing, NormalCard Ace Spade 1 None Base Nothing, NormalCard Ace Spade 1 None Base Nothing, NormalCard King Spade 1 None Base Nothing, NormalCard King Diamond 1 Wild Base Nothing]
                 getHandType hand 5 1 `shouldBe` FlushHouse
@@ -151,3 +197,55 @@ spec = do
             it "detects 4-NormalCard straight with 2 wild" $ do
                 let hand = [NormalCard Eight Heart 1 None Base Nothing, NormalCard Ten Spade 1 None Base Nothing, NormalCard Queen Heart 1 Wild Base Nothing, NormalCard Ace Heart 1 Wild Base Nothing]
                 getHandType hand 4 2 `shouldBe` Straight
+
+        it "detects five of a kind with 3 non-wilds of one rank and 2 non-wilds of another (same suit)" $ do
+            let hand = [NormalCard Ace Heart 3 None Base Nothing, NormalCard King Heart 2 None Base Nothing]
+            getHandType hand 5 1 `shouldBe` FlushHouse
+
+        it "detects five of a kind with 3 non-wilds of one rank and 2 non-wilds of another (same suit)" $ do
+            let hand = [NormalCard Ace Heart 3 None Base Nothing, NormalCard King Heart 1 None Base Nothing, mkBaseCard King Diamond]
+            getHandType hand 4 1 `shouldBe` FlushHouse
+
+        it "detects flush house with 3 of one rank and 2 of another, all same suit" $ do
+            let hand = [mkBaseCard Ace Heart, mkBaseCard Ace Heart, mkBaseCard Ace Heart, mkBaseCard King Heart, mkBaseCard King Heart]
+            getHandType hand 5 1 `shouldBe` FlushHouse
+
+        it "detects flush house with 3 of one rank and 2 of another, all same suit, different ranks" $ do
+            let hand = [mkBaseCard Queen Spade, mkBaseCard Queen Spade, mkBaseCard Queen Spade, mkBaseCard Jack Spade, mkBaseCard Jack Spade]
+            getHandType hand 5 1 `shouldBe` FlushHouse
+
+        it "detects full house with 3 of one rank and 2 of another, mixed suits" $ do
+            let hand = [mkBaseCard Ace Heart, mkBaseCard Ace Diamond, mkBaseCard Ace Club, mkBaseCard King Heart, mkBaseCard King Diamond]
+            getHandType hand 5 1 `shouldBe` FullHouse
+
+        it "detects full house with 3 of one rank and 2 of another, all different suits" $ do
+            let hand = [mkBaseCard Ten Heart, mkBaseCard Ten Diamond, mkBaseCard Ten Club, mkBaseCard Nine Spade, mkBaseCard Nine Diamond]
+            getHandType hand 5 1 `shouldBe` FullHouse
+
+        it "detects five of a kind with 5 cards of the same rank" $ do
+            let hand = [NormalCard Ace Heart 4 None Base Nothing, mkBaseCard Ace Diamond]
+            getHandType hand 5 1 `shouldBe` FiveKind
+
+        it "detects five of a kind with 3 cards of one rank and 2 cards of another rank" $ do
+            let hand = [NormalCard Ace Heart 3 None Base Nothing, NormalCard King Heart 2 None Base Nothing]
+            getHandType hand 5 1 `shouldBe` FlushHouse
+
+        it "detects flush house with 3 cards of one rank and 2 cards of another rank, all same suit" $ do
+            let hand = [NormalCard Ace Heart 3 None Base Nothing, NormalCard King Heart 2 None Base Nothing]
+            getHandType hand 5 1 `shouldBe` FlushHouse
+
+        it "detects full house with 3 cards of one rank and 2 cards of another rank, mixed suits" $ do
+            let hand = [NormalCard Ace Heart 3 None Base Nothing, NormalCard King Diamond 2 None Base Nothing]
+            getHandType hand 5 1 `shouldBe` FullHouse
+
+        it "detects full house with 3 cards of one rank and 2 cards of another rank, all different suits" $ do
+            let hand = [NormalCard Ten Heart 3 None Base Nothing, NormalCard Nine Diamond 2 None Base Nothing]
+            getHandType hand 5 1 `shouldBe` FullHouse
+
+        it "detects flush house with 3 cards of one rank and 2 cards of another rank" $ do
+            let hand = [NormalCard Ace Heart 3 None Base Nothing, NormalCard King Heart 2 None Base Nothing]
+            getHandType hand 5 1 `shouldBe` FlushHouse
+
+        it "detects flush house with 3 of one rank and 2 of another, all same suit" $ do
+            let hand = [mkBaseCard Ace Heart, mkBaseCard Ace Heart, mkBaseCard Ace Heart, mkBaseCard King Heart, mkBaseCard King Heart]
+            getHandType hand 5 1 `shouldBe` FlushHouse

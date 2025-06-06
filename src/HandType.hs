@@ -7,6 +7,8 @@
 module HandType (
     HandType (..),
     Hand,
+    Sz,
+    Dist,
     allHandtypes,
     getHandType,
     checkHandType,
@@ -18,7 +20,7 @@ import Data.List (find, foldl', partition)
 import Data.Sequence (Seq (..), (|>))
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
-
+import Debug.Trace (trace, traceShow)
 import Control.Monad (forM_)
 import Control.Monad.ST (runST)
 import Data.Aeson (ToJSON)
@@ -26,8 +28,8 @@ import Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as MV
 import GHC.Generics (Generic)
-
 import Cards
+import System.IO.Unsafe (unsafePerformIO)
 
 data HandType
     = FlushFive
@@ -49,7 +51,7 @@ type Dist = Int
 type Sz = Int
 type Counter = Vector Int
 type Indices = [Int]
-type CntStats = (Indices, Indices, Indices, Indices)
+type CntStats = (Indices, Indices, Indices, Indices, Indices)
 type RankEnum = Int
 
 allHandtypes :: [HandType]
@@ -63,32 +65,40 @@ getHandType cards fs_sz dist =
 
 checkHandType :: Hand -> Sz -> Dist -> HandType -> Bool
 checkHandType cards fs_sz dist hand_type =
-    case hand_type of
-        FlushFive -> any isFlushFive rank_cnt_stats_by_suit
-        FlushHouse -> any isFlushHouse rank_cnt_stats_by_suit
-        FiveKind -> not (null cntm5)
-        FourKind -> not (null cnt4)
-        FullHouse -> isFullHouse rank_cnt_stats
-        Flush -> any (>= fs_sz) suit_cnt
-        StraightFlush ->
-            any (\st_enum -> suit_cnt V.! st_enum >= fs_sz && isStraightFlush (rank_enums_by_suit V.! st_enum)) [0 .. 3]
-        Straight -> any isStraight (genSlides fs_sz rank_enums)
-        ThreeKind -> not (null cnt3)
-        TwoPair -> length cnt2 >= 2
-        Pair -> not (null cnt2)
-        HighCard -> True
+    traceShow ("Combined cards: " ++ show combined_cards) $
+        traceShow ("Suit counts: " ++ show (V.toList suit_cnt)) $
+            traceShow ("Rank counts: " ++ show (V.toList rank_cnt)) $
+                traceShow ("Rank count stats: " ++ show rank_cnt_stats) $
+                    traceShow ("Rank count stats by suit: " ++ show (map show (V.toList rank_cnt_stats_by_suit))) $
+                        case hand_type of
+                            FlushFive -> any isFlushFive rank_cnt_stats_by_suit
+                            FlushHouse -> any isFlushHouse rank_cnt_stats_by_suit
+                            FiveKind -> not (null cntm5)
+                            FourKind -> not (null cnt4)
+                            FullHouse -> isFullHouse rank_cnt_stats
+                            Flush -> any (>= fs_sz) suit_cnt
+                            StraightFlush ->
+                                any (\st_enum -> suit_cnt V.! st_enum >= fs_sz && isStraightFlush (rank_enums_by_suit V.! st_enum)) [0 .. 3]
+                            Straight -> any isStraight (genSlides fs_sz rank_enums)
+                            ThreeKind -> not (null cnt3)
+                            TwoPair -> length cnt2 >= 2
+                            Pair -> not (null cnt2)
+                            HighCard -> True
   where
     (_, nstones) = partition isStone cards
     (wilds, nwilds) = partition isWild nstones
-    combined_cards = nwilds ++ concatMap (\card -> [mkBaseCard (rank card) suit' | suit' <- allSuits]) wilds
+    combined_cards = nwilds ++ genWilds wilds
     suit_cnt = genCounterSuit combined_cards
     rank_cnt = genCounterRank nstones
-    rank_cnt_stats@(cnt2, cnt3, cnt4, cntm5) = categorizeIndices rank_cnt
+    rank_cnt_stats@(cnt1, cnt2, cnt3, cnt4, cntm5) = categorizeIndices rank_cnt
     cards_by_suit = genCardsBySuit combined_cards
     rank_cnt_by_suit = genCounterRank <$> cards_by_suit
     rank_cnt_stats_by_suit = categorizeIndices <$> rank_cnt_by_suit
     rank_enums_by_suit = getRankEnums <$> rank_cnt_by_suit
     rank_enums = getRankEnums rank_cnt
+
+    genWilds :: [Card] -> [Card]
+    genWilds = concatMap (\card -> concatMap (replicate (quantity card) . mkBaseCard (rank card)) allSuits)
 
     getRankEnums :: Counter -> [RankEnum]
     getRankEnums cnter = filter (\rank_enum -> cnter V.! rank_enum > 0) [0 .. 13]
@@ -99,15 +109,16 @@ checkHandType cards fs_sz dist hand_type =
         hasEnoughRanks rank_enum = rank_cnt V.! rank_enum >= req_cnt
 
     isFlushFive :: CntStats -> Bool
-    isFlushFive (_, _, c4, cm5) = not (null cm5) || isFlushMissing c4 5
+    isFlushFive (_, _, _, c4, cm5) = not (null cm5) || isFlushMissing c4 5
 
     isFlushHouse :: CntStats -> Bool
-    isFlushHouse rcnt_stats_by_suit@(c2, _, _, _) = isFullHouse rcnt_stats_by_suit || isFlushHouseMissing
+    isFlushHouse rcnt_stats_by_suit@(c1, c2, c3, c4, cm5) = (cm3_sz > 0 && cm3_sz + length c2 >= 2) || isFlushHouseMissing
       where
-        isFlushHouseMissing = length c2 >= 2 && isFlushMissing c2 3
+        cm3_sz = length c3 + length c4 + length cm5
+        isFlushHouseMissing = (length c2 >= 2 && isFlushMissing c2 3) || (cm3_sz >= 1 && isFlushMissing c1 2)
 
     isFullHouse :: CntStats -> Bool
-    isFullHouse (c2, c3, c4, cm5) = cm3_sz > 0 && cm3_sz + length c2 >= 2
+    isFullHouse (_, c2, c3, c4, cm5) = cm3_sz > 0 && cm3_sz + length c2 >= 2
       where
         cm3_sz = length c3 + length c4 + length cm5
 
@@ -147,7 +158,7 @@ genCounter transform sz cards = runST $ do
     vec <- MV.replicate sz 0
     forM_ cards $ \card -> do
         let idx = (fromEnum . transform) card
-        MV.modify vec (+ 1) idx
+        MV.modify vec (+ quantity card) idx
     V.freeze vec
 
 genCounterSuit :: Hand -> Counter
@@ -162,16 +173,17 @@ uniqSorted = S.toList . S.fromList
 categorizeIndices :: Vector Int -> CntStats
 categorizeIndices cnter =
     let
-        step (cnt2, cnt3, cnt4, cntm5) card_idx
-            | val == 2 = (card_idx : cnt2, cnt3, cnt4, cntm5)
-            | val == 3 = (cnt2, card_idx : cnt3, cnt4, cntm5)
-            | val == 4 = (cnt2, cnt3, card_idx : cnt4, cntm5)
-            | val >= 5 = (cnt2, cnt3, cnt4, card_idx : cntm5)
-            | otherwise = (cnt2, cnt3, cnt4, cntm5)
+        step (cnt1, cnt2, cnt3, cnt4, cntm5) card_idx
+            | val == 1 = (card_idx : cnt1, cnt2, cnt3, cnt4, cntm5)
+            | val == 2 = (cnt1, card_idx : cnt2, cnt3, cnt4, cntm5)
+            | val == 3 = (cnt1, cnt2, card_idx : cnt3, cnt4, cntm5)
+            | val == 4 = (cnt1, cnt2, cnt3, card_idx : cnt4, cntm5)
+            | val >= 5 = (cnt1, cnt2, cnt3, cnt4, card_idx : cntm5)
+            | otherwise = (cnt1, cnt2, cnt3, cnt4, cntm5)
           where
             val = cnter V.! card_idx
      in
-        foldl' step ([], [], [], []) [0 .. (V.length cnter - 1)]
+        foldl' step ([], [], [], [], []) [0 .. (V.length cnter - 1)]
 
 genSlides :: Sz -> [RankEnum] -> [[RankEnum]]
 genSlides slide_sz rank_enums = genAceSlide : genNormalSlide Seq.empty rank_enums

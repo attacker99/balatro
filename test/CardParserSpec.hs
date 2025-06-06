@@ -1,7 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
-module CardParserSpec (spec) where
-
 import Test.Hspec
 import Cards (Card(..), Rank(..), Suit(..), Enhancement(..), Edition(..), Seal(..))
 import CardParser (stringToCard)

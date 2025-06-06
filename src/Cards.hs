@@ -28,8 +28,6 @@ where
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Hashable (Hashable)
 import Data.Ord (comparing)
-import Data.Vector (Vector)
-import qualified Data.Vector as V
 import GHC.Generics (Generic)
 
 data Rank
@@ -65,21 +63,21 @@ data Enhancement
     | Steel
     | Gold
     | Lucky
-    deriving (Bounded, Enum, Eq, Read, Show, Generic, Hashable, ToJSON, FromJSON)
+    deriving (Bounded, Enum, Eq, Ord, Read, Show, Generic, Hashable, ToJSON, FromJSON)
 
 data Edition
     = Base
     | Foil
     | Holographic
     | Polychrome
-    deriving (Bounded, Enum, Eq, Read, Show, Generic, Hashable, ToJSON, FromJSON)
+    deriving (Bounded, Enum, Eq, Ord, Read, Show, Generic, Hashable, ToJSON, FromJSON)
 
 data Seal
     = GoldS
     | Red
     | Blue
     | Purple
-    deriving (Bounded, Enum, Eq, Read, Show, Generic, Hashable, ToJSON, FromJSON)
+    deriving (Bounded, Enum, Eq, Ord, Read, Show, Generic, Hashable, ToJSON, FromJSON)
 
 data Card
     = StoneCard
@@ -118,7 +116,7 @@ instance Enum Card where
     toEnum :: Int -> Card
     toEnum n = let (s, r) = n `divMod` 13 in mkBaseCard (toEnum r) (toEnum s)
 
-type Deck = Vector Card
+type Deck = [Card]
 
 allRanks :: [Rank]
 allRanks = [Two .. Ace]
@@ -130,34 +128,19 @@ mkBaseCard :: Rank -> Suit -> Card
 mkBaseCard r s = NormalCard{rank = r, suit = s, quantity = 1, enhancement = None, edition = Base, seal = Nothing}
 
 stdDeck :: Deck
-stdDeck =
-    V.fromList
-        [ mkBaseCard r s
-        | r <- allRanks
-        , s <- allSuits
-        ]
+stdDeck = [mkBaseCard r s | r <- allRanks, s <- allSuits]
 
 abandonedRanks :: [Rank]
 abandonedRanks = [Two .. Ten] ++ [Ace]
 
 abandonedDeck :: Deck
-abandonedDeck =
-    V.fromList
-        [ mkBaseCard r s
-        | r <- abandonedRanks
-        , s <- allSuits
-        ]
+abandonedDeck = [mkBaseCard r s | r <- abandonedRanks, s <- allSuits]
 
 checkeredSuits :: [Suit]
 checkeredSuits = [Spade, Heart]
 
-checkeredDeck :: Vector Card
-checkeredDeck =
-    V.fromList
-        [ mkBaseCard r s
-        | r <- allRanks
-        , s <- checkeredSuits
-        ]
+checkeredDeck :: Deck
+checkeredDeck = [mkBaseCard r s | r <- allRanks, s <- checkeredSuits]
 
 isEnhanced :: Enhancement -> Card -> Bool
 isEnhanced property = \case

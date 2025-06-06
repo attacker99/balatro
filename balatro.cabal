@@ -41,28 +41,20 @@ build-type:    Simple
 
 library balatro-core
     build-depends:
+        base ^>=4.18.2.0
         , aeson
         , async
-        , base                  ^>=4.18.2.0
         , containers
         , hashable
-        , hashtables
-        , lens
         , megaparsec
         , random
         , text
-        , unordered-containers
         , vector
-        , vector-algorithms
-        , wai
-        , warp
-
     exposed-modules:
         CardParser
         Cards
         HandType
         Simulate
-
     hs-source-dirs:   src
     default-language: Haskell2010
     ghc-options:      -Wall
@@ -70,21 +62,18 @@ library balatro-core
 executable balatro-server
     main-is:          Main.hs
     build-depends:
+        base ^>=4.18.2.1
         , aeson
         , balatro-core
-        , base                  ^>=4.18.2.1
-        , bytestring
-        , directory
-        , http-types
+        , containers
         , megaparsec
-        , scotty
         , text
-        , unordered-containers
-        , vector
+        , http-types
         , wai
         , wai-cors
-        , warp
-
+        , directory
+        , filepath
+        , scotty
     hs-source-dirs:   app
     default-language: Haskell2010
     ghc-options:      -Wall
@@ -97,16 +86,13 @@ test-suite test
         CardsSpec
         HandTypeTest
         SimulateSpec
-
     build-depends:
+        base ^>=4.18.2.0
         , balatro-core
-        , base                  ^>=4.18.2.0
         , hspec
         , megaparsec
-        , QuickCheck
-        , unordered-containers
+        , containers
         , vector
-
     hs-source-dirs:   test
     default-language: Haskell2010
     ghc-options:      -Wall

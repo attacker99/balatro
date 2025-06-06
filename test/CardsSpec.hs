@@ -31,13 +31,13 @@ spec = do
             length allSuits `shouldBe` 4
 
         it "stdDeck contains 52 cards" $ do
-            V.length stdDeck `shouldBe` 52
+            length stdDeck `shouldBe` 52
 
         it "abandonedDeck contains 40 cards" $ do
-            V.length abandonedDeck `shouldBe` (10 * 4)
+            length abandonedDeck `shouldBe` (10 * 4)
 
         it "checkeredDeck contains 26 cards" $ do
-            V.length checkeredDeck `shouldBe` (13 * 2)
+            length checkeredDeck `shouldBe` (13 * 2)
 
     describe "Enhancement checkers" $ do
         let wildCard = (mkBaseCard Ten Heart){enhancement = Wild}

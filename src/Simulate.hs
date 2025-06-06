@@ -1,69 +1,84 @@
+{-# LANGUAGE TupleSections #-}
 module Simulate where
 
-import Cards (Card (..))
-import Control.Concurrent.Async (mapConcurrently)
-import Control.Monad (replicateM, when)
+import Cards (Deck, Card(StoneCard, NormalCard, enhancement, edition, seal), Seal, Edition, Enhancement)
+import Control.Concurrent.Async (replicateConcurrently)
+import Control.Monad (when, forM_)
 import qualified Data.Map.Strict as Map
 import qualified Data.Vector as V
-import HandType (HandType (..), getHandType)
+import qualified Data.Vector.Mutable as MV
+import HandType (HandType (..), getHandType, Hand, Sz, Dist)
+import Data.Map.Strict (Map)
 import System.Random (randomRIO)
-import CardParser (stringToCard)
+import Data.Maybe (maybeToList)
 
-type Deck = V.Vector Card
-type Hand = V.Vector Card
-type Sz = Int
-type Dist = Int
+type SubHand = [Card]
 
-parseCardsWithQuantity :: String -> V.Vector (Maybe Card)
-parseCardsWithQuantity input =
-    let specs = words input
-        parseSpec spec = stringToCard spec
-     in V.fromList $ map parseSpec specs
 
-simulate :: Deck -> Deck -> Deck -> Sz -> Sz -> Dist -> Bool -> IO (HandType, Deck)
-simulate deck hand discard drawNum fsSz dist enableLogging = do
-    when enableLogging $ do
-        putStrLn "Simulating with:"
-        putStrLn $ "  deck: " ++ show (V.toList deck)
-        putStrLn $ "  hand: " ++ show (V.toList hand)
-        putStrLn $ "  discard: " ++ show (V.toList discard)
-        putStrLn $ "  drawNum: " ++ show drawNum
-        putStrLn $ "  fsSz: " ++ show fsSz
-        putStrLn $ "  dist: " ++ show dist
-
-    let remainingHand = V.filter (\card -> card `notElem` V.toList discard) hand
-    when enableLogging $ putStrLn $ "  remainingHand: " ++ show (V.toList remainingHand)
-
-    let availableCards = V.filter (\card -> card `notElem` V.toList hand) deck
-    when enableLogging $ putStrLn $ "  availableCards: " ++ show (V.toList availableCards)
-
-    shuffledCards <- shuffle availableCards
-    when enableLogging $ putStrLn $ "  shuffledCards: " ++ show (V.toList shuffledCards)
-
-    let drawnCards = V.take drawNum shuffledCards
-    when enableLogging $ putStrLn $ "  drawnCards: " ++ show (V.toList drawnCards)
-
-    let finalCards = V.concat [drawnCards, remainingHand]
-    when enableLogging $ putStrLn $ "  finalCards: " ++ show (V.toList finalCards)
-
-    let handType = getHandType (V.toList finalCards) fsSz dist
-    when enableLogging $ putStrLn $ "  handType: " ++ show handType
-    return (handType, finalCards)
-
-shuffle :: Deck -> IO Deck
+shuffle :: [Card] -> IO [Card]
 shuffle xs = do
-    let n = V.length xs
-    indices <- replicateM n (randomRIO (0, n - 1))
-    return $ V.map (xs V.!) (V.fromList indices)
+  let n = length xs
+  mvec <- V.thaw (V.fromList xs)  -- mutable vector
+  forM_ [0 .. n - 2] $ \i -> do
+    j <- randomRIO (i, n - 1)
+    MV.swap mvec i j
+  V.toList <$> V.freeze mvec
 
-simulateMul :: Deck -> Hand -> Deck -> Sz -> Sz -> Dist -> Int -> Bool -> IO [(HandType, Double)]
-simulateMul deck hand discard drawNum fsSz dist numSims enableLogging = do
-    results <- mapConcurrently (\_ -> fst <$> simulate deck hand discard drawNum fsSz dist enableLogging) [1 .. numSims]
-    let counts = Map.fromListWith (+) [(htype, 1 :: Int) | htype <- results]
-        total = fromIntegral numSims
-    return $ map (\(ht, count) -> (ht, (fromIntegral count / total) * 100)) (Map.toList counts)
+simulate ::
+    Deck ->
+    Hand ->
+    Sz ->
+    Dist ->
+    Int ->
+    Bool ->
+    IO (Map Enhancement Int, Map Edition Int, Map (Maybe Seal) Int, Int, HandType)
+simulate deck hand fs_sz dist num_draw is_logged = do
+    shuffled <- shuffle deck
+    let drawn = take num_draw shuffled
+        newHand = hand ++ drawn
+        enhancements = [e | NormalCard{enhancement = e} <- newHand]
+        editions = [e | NormalCard{edition = e} <- newHand] ++ [e | StoneCard{edition = e} <- newHand]
+        seals =
+            [s | NormalCard{seal = s} <- newHand, s <- maybeToList s]
+                ++ [s | StoneCard{seal = s} <- newHand, s <- maybeToList s]
+        stones = length [() | StoneCard{} <- newHand]
+        enhancementStats = countElems enhancements
+        editionStats = countElems editions
+        sealStats = countElems (map Just seals)
+        handType = getHandType newHand fs_sz dist
+    when is_logged $ do
+        putStrLn $ "Enhancement stats: " ++ show enhancementStats
+        putStrLn $ "Edition stats: " ++ show editionStats
+        putStrLn $ "Seal stats: " ++ show sealStats
+        putStrLn $ "Stone count: " ++ show stones
+        putStrLn $ "Hand type: " ++ show handType
+    return (enhancementStats, editionStats, sealStats, stones, handType)
 
-readMaybe :: (Read a) => String -> Maybe a
-readMaybe s = case reads s of
-    [(x, "")] -> Just x
-    _ -> Nothing
+simulateMul ::
+    Deck ->
+    Hand ->
+    Sz ->
+    Dist ->
+    Int ->
+    Int ->
+    Bool ->
+    IO (Map Enhancement Double, Map Edition Double, Map (Maybe Seal) Double, Double, Map HandType Int)
+simulateMul deck hand fs_sz dist num_sim num_draw is_logged = do
+    results <- replicateConcurrently num_sim (simulate deck hand fs_sz dist num_draw is_logged)
+    let resultsVec = V.fromList results
+        (enhLists, edLists, sealLists, stoneCounts, handTypes) = V.unzip5 resultsVec
+        avgEnh = averageMaps (V.toList enhLists) num_sim
+        avgEd = averageMaps (V.toList edLists) num_sim
+        avgSeal = averageMaps (V.toList sealLists) num_sim
+        avgStones = fromIntegral (sum stoneCounts) / fromIntegral num_sim
+        handTypeDist = countElems (V.toList handTypes)
+    return (avgEnh, avgEd, avgSeal, avgStones, handTypeDist)
+
+countElems :: (Ord a) => [a] -> Map a Int
+countElems = Map.fromListWith (+) . map (,1)
+
+averageMaps :: (Ord k, Fractional v) => [Map k Int] -> Int -> Map k v
+averageMaps maps total =
+    Map.map (/ fromIntegral total) $
+        Map.unionsWith (+) $
+            map (Map.map fromIntegral) maps

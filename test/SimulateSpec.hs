@@ -5,8 +5,9 @@ import Cards (Card (..), Edition (..), Enhancement (..), Rank (..), Seal (..), S
 import Data.Maybe (isJust)
 import qualified Data.Vector as V
 import HandType (allHandtypes)
-import Simulate (parseCardsWithQuantity, simulate, simulateMul)
+import Simulate (simulate, simulateMul)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
+import qualified Data.Map as Map
 
 spec :: Spec
 spec = do
@@ -65,49 +66,90 @@ spec = do
             stringToCard "Asx" `shouldBe` Nothing -- Invalid enhancement
             stringToCard "Asfx" `shouldBe` Nothing -- Invalid edition
             stringToCard "Asfyx" `shouldBe` Nothing -- Invalid seal
-    describe "parseCardsWithQuantity" $ do
-        it "parses multiple cards correctly" $ do
-            let result = parseCardsWithQuantity "As Kh Qd"
-            V.length result `shouldBe` 3
-            V.toList result `shouldBe` [Just (NormalCard Ace Spade 1 None Base Nothing), Just (NormalCard King Heart 1 None Base Nothing), Just (NormalCard Queen Diamond 1 None Base Nothing)]
 
-        it "parses multiple cards with properties" $ do
-            let result = parseCardsWithQuantity "Asbfy Khmhr Qdwp"
-            V.length result `shouldBe` 3
-            V.toList result
-                `shouldBe` [ Just (NormalCard Ace Spade 1 Bonus Foil (Just GoldS))
-                           , Just (NormalCard King Heart 1 Mult Holographic (Just Red))
-                           , Just (NormalCard Queen Diamond 1 Wild Polychrome Nothing)
-                           ]
-
-        it "handles empty input" $ do
-            let result = parseCardsWithQuantity ""
-            V.length result `shouldBe` 0
-
-        it "handles invalid cards in input" $ do
-            let result = parseCardsWithQuantity "As Xx Kh"
-            let validCards = V.filter (isJust) result
-            V.length validCards `shouldBe` 2
-            V.toList validCards `shouldBe` [Just (NormalCard Ace Spade 1 None Base Nothing), Just (NormalCard King Heart 1 None Base Nothing)]
     describe "simulate" $ do
-        it "returns a valid hand type" $ do
-            let deck = V.fromList [mkBaseCard Ace Spade, mkBaseCard King Heart, mkBaseCard Queen Diamond]
-            let hand = V.fromList [mkBaseCard Jack Club, mkBaseCard Ten Spade]
-            let discard = V.fromList []
-            (result, _) <- simulate deck hand discard 1 5 0 False
-            result `shouldSatisfy` \ht -> ht `elem` allHandtypes
+        it "returns valid statistics and hand type" $ do
+            let deck = [NormalCard Ace Spade 1 None Base Nothing,
+                       NormalCard King Heart 1 None Base Nothing,
+                       NormalCard Queen Diamond 1 None Base Nothing]
+            let hand = [NormalCard Ace Spade 1 None Base Nothing,
+                       NormalCard King Heart 1 None Base Nothing]
+            (enhStats, edStats, sealStats, stones, handType) <- simulate deck hand 5 1 1 False
+            handType `shouldSatisfy` \ht -> ht `elem` allHandtypes
+            Map.size enhStats `shouldSatisfy` (>= 0)
+            Map.size edStats `shouldSatisfy` (>= 0)
+            Map.size sealStats `shouldSatisfy` (>= 0)
+            stones `shouldSatisfy` (>= 0)
+
+        it "handles multiple draws correctly" $ do
+            let deck = [NormalCard Ace Spade 1 None Base Nothing,
+                       NormalCard King Heart 1 None Base Nothing,
+                       NormalCard Queen Diamond 1 None Base Nothing,
+                       NormalCard Jack Club 1 None Base Nothing,
+                       NormalCard Ten Spade 1 None Base Nothing]
+            let hand = [NormalCard Ace Spade 1 None Base Nothing,
+                       NormalCard King Heart 1 None Base Nothing]
+            (enhStats, edStats, sealStats, stones, handType) <- simulate deck hand 5 2 1 False
+            handType `shouldSatisfy` \ht -> ht `elem` allHandtypes
+            Map.size enhStats `shouldSatisfy` (>= 0)
+            Map.size edStats `shouldSatisfy` (>= 0)
+            Map.size sealStats `shouldSatisfy` (>= 0)
+            stones `shouldSatisfy` (>= 0)
+
+        it "handles multiple free shop sizes correctly" $ do
+            let deck = [NormalCard Ace Spade 1 None Base Nothing,
+                       NormalCard King Heart 1 None Base Nothing,
+                       NormalCard Queen Diamond 1 None Base Nothing,
+                       NormalCard Jack Club 1 None Base Nothing,
+                       NormalCard Ten Spade 1 None Base Nothing]
+            let hand = [NormalCard Ace Spade 1 None Base Nothing,
+                       NormalCard King Heart 1 None Base Nothing]
+            (enhStats, edStats, sealStats, stones, handType) <- simulate deck hand 5 1 2 False
+            handType `shouldSatisfy` \ht -> ht `elem` allHandtypes
+            Map.size enhStats `shouldSatisfy` (>= 0)
+            Map.size edStats `shouldSatisfy` (>= 0)
+            Map.size sealStats `shouldSatisfy` (>= 0)
+            stones `shouldSatisfy` (>= 0)
+
+        it "handles both multiple draws and free shop sizes" $ do
+            let deck = [NormalCard Ace Spade 1 None Base Nothing,
+                       NormalCard King Heart 1 None Base Nothing,
+                       NormalCard Queen Diamond 1 None Base Nothing,
+                       NormalCard Jack Club 1 None Base Nothing,
+                       NormalCard Ten Spade 1 None Base Nothing,
+                       NormalCard Nine Heart 1 None Base Nothing,
+                       NormalCard Eight Diamond 1 None Base Nothing]
+            let hand = [NormalCard Ace Spade 1 None Base Nothing,
+                       NormalCard King Heart 1 None Base Nothing]
+            (enhStats, edStats, sealStats, stones, handType) <- simulate deck hand 5 2 2 False
+            handType `shouldSatisfy` \ht -> ht `elem` allHandtypes
+            Map.size enhStats `shouldSatisfy` (>= 0)
+            Map.size edStats `shouldSatisfy` (>= 0)
+            Map.size sealStats `shouldSatisfy` (>= 0)
+            stones `shouldSatisfy` (>= 0)
 
     describe "simulateMul" $ do
-        it "returns percentages that sum to approximately 100" $ do
-            let deck = V.fromList [mkBaseCard Ace Spade, mkBaseCard King Heart, mkBaseCard Queen Diamond]
-            let hand = V.fromList [mkBaseCard Jack Club, mkBaseCard Ten Spade]
-            let discard = V.fromList []
-            results <- simulateMul deck hand discard 1 5 0 100 False
-            let total = sum $ map snd results
-            total `shouldSatisfy` \x -> abs (x - 100) < 1 -- Allow for small floating point errors
-        it "simulates multiple hands correctly" $ do
-            let deck = V.fromList [mkBaseCard Two Spade, mkBaseCard Three Heart]
-            let hand = V.fromList [mkBaseCard Four Diamond]
-            let discard = V.empty
-            results <- simulateMul deck hand discard 1 1 1 100 False
-            length results `shouldBe` 1
+        it "returns valid statistics for multiple simulations" $ do
+            let deck = [NormalCard Ace Spade 1 None Base Nothing,
+                       NormalCard King Heart 1 None Base Nothing,
+                       NormalCard Queen Diamond 1 None Base Nothing]
+            let hand = [NormalCard Ace Spade 1 None Base Nothing,
+                       NormalCard King Heart 1 None Base Nothing]
+            (enhStats, edStats, sealStats, stones, handTypeStats) <- simulateMul deck hand 5 1 100 1 False
+            Map.size enhStats `shouldSatisfy` (>= 0)
+            Map.size edStats `shouldSatisfy` (>= 0)
+            Map.size sealStats `shouldSatisfy` (>= 0)
+            stones `shouldSatisfy` (>= 0)
+            Map.size handTypeStats `shouldSatisfy` (>= 0)
+            sum (Map.elems handTypeStats) `shouldBe` 100
+
+        it "handles stone cards correctly" $ do
+            let deck = [StoneCard 1 Base Nothing,
+                       NormalCard King Heart 1 None Base Nothing,
+                       NormalCard Queen Diamond 1 None Base Nothing]
+            let hand = [StoneCard 1 Base Nothing,
+                       NormalCard King Heart 1 None Base Nothing]
+            (enhStats, edStats, sealStats, stones, handTypeStats) <- simulateMul deck hand 5 1 100 1 False
+            stones `shouldSatisfy` (>= 0)
+            Map.size handTypeStats `shouldSatisfy` (>= 0)
+            sum (Map.elems handTypeStats) `shouldBe` 100

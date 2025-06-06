@@ -6,36 +6,17 @@ module CardParser (
     Suit (..),
     Enhancement (..),
     Edition (..),
-    Seal (..),
+    Seal (..)
 ) where
 
 import Control.Applicative (optional)
 import Control.Monad (void)
-
 import Data.Char (toLower)
+import Data.Maybe (fromMaybe)
 import Data.Void (Void)
-import Text.Megaparsec (
-    MonadParsec (try),
-    Parsec,
-    choice,
-    eof,
-    option,
-    parse,
-    satisfy,
-    some,
-    (<?>),
-    (<|>),
- )
+import Text.Megaparsec
 import Text.Megaparsec.Char (char, digitChar)
-
-import Cards (
-    Card (..),
-    Edition (..),
-    Enhancement (..),
-    Rank (..),
-    Seal (..),
-    Suit (..),
- )
+import Cards (Card (..), Edition (..), Enhancement (..), Rank (..), Seal (..), Suit (..))
 
 type Parser = Parsec Void String
 
@@ -120,7 +101,7 @@ parseStoneCard = do
     qty <- option 1 quantityParser
     edt <- optional editionParser
     sl <- optional sealParser
-    pure $ StoneCard qty (maybe Base id edt) sl
+    pure $ StoneCard qty (fromMaybe Base edt) sl
 
 -- NormalCard: [rank][suit][maybe quantity][maybe enh][maybe edt][maybe seal]
 parseNormalCard :: Parser Card
@@ -131,4 +112,4 @@ parseNormalCard = do
     enh <- optional enhancementParser
     edt <- optional editionParser
     sl <- optional sealParser
-    pure $ NormalCard r s qty (maybe None id enh) (maybe Base id edt) sl
+    pure $ NormalCard r s qty (fromMaybe None enh) (fromMaybe Base edt) sl
