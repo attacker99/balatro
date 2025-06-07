@@ -18,7 +18,7 @@ spec = do
             c1 `shouldBe` c2
 
         it "stone cards only equal to other stone cards" $ do
-            let c1 = StoneCard 1 Base Nothing
+            let c1 = StoneCard 1 Base NoneS
             let c2 = (mkBaseCard Ace Spade)
             c1 `shouldNotBe` c2
             c1 `shouldBe` c1
@@ -41,7 +41,7 @@ spec = do
 
     describe "Enhancement checkers" $ do
         let wildCard = (mkBaseCard Ten Heart){enhancement = Wild}
-        let stoneCard = StoneCard 1 Base Nothing
+        let stoneCard = StoneCard 1 Base NoneS
         let plainCard = mkBaseCard Two Club
 
         it "isWild detects Wild enhancement" $ do

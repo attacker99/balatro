@@ -15,21 +15,20 @@ module HandType (
 )
 where
 
+import Cards
+import Control.Monad (forM_)
+import Control.Monad.ST (runST)
+import Data.Aeson (ToJSON)
 import Data.Foldable (toList)
 import Data.List (find, foldl', partition)
 import Data.Sequence (Seq (..), (|>))
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
-import Debug.Trace (trace, traceShow)
-import Control.Monad (forM_)
-import Control.Monad.ST (runST)
-import Data.Aeson (ToJSON)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as MV
+import Debug.Trace (traceShow)
 import GHC.Generics (Generic)
-import Cards
-import System.IO.Unsafe (unsafePerformIO)
 
 data HandType
     = FlushFive
@@ -90,7 +89,7 @@ checkHandType cards fs_sz dist hand_type =
     combined_cards = nwilds ++ genWilds wilds
     suit_cnt = genCounterSuit combined_cards
     rank_cnt = genCounterRank nstones
-    rank_cnt_stats@(cnt1, cnt2, cnt3, cnt4, cntm5) = categorizeIndices rank_cnt
+    rank_cnt_stats@(_, cnt2, cnt3, cnt4, cntm5) = categorizeIndices rank_cnt
     cards_by_suit = genCardsBySuit combined_cards
     rank_cnt_by_suit = genCounterRank <$> cards_by_suit
     rank_cnt_stats_by_suit = categorizeIndices <$> rank_cnt_by_suit
@@ -112,7 +111,7 @@ checkHandType cards fs_sz dist hand_type =
     isFlushFive (_, _, _, c4, cm5) = not (null cm5) || isFlushMissing c4 5
 
     isFlushHouse :: CntStats -> Bool
-    isFlushHouse rcnt_stats_by_suit@(c1, c2, c3, c4, cm5) = (cm3_sz > 0 && cm3_sz + length c2 >= 2) || isFlushHouseMissing
+    isFlushHouse (c1, c2, c3, c4, cm5) = (cm3_sz > 0 && cm3_sz + length c2 >= 2) || isFlushHouseMissing
       where
         cm3_sz = length c3 + length c4 + length cm5
         isFlushHouseMissing = (length c2 >= 2 && isFlushMissing c2 3) || (cm3_sz >= 1 && isFlushMissing c1 2)

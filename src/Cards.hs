@@ -73,7 +73,8 @@ data Edition
     deriving (Bounded, Enum, Eq, Ord, Read, Show, Generic, Hashable, ToJSON, FromJSON)
 
 data Seal
-    = GoldS
+    = NoneS
+    | GoldS
     | Red
     | Blue
     | Purple
@@ -83,7 +84,7 @@ data Card
     = StoneCard
         { quantity :: Int
         , edition :: Edition
-        , seal :: Maybe Seal
+        , seal :: Seal
         }
     | NormalCard
         { rank :: Rank
@@ -91,7 +92,7 @@ data Card
         , quantity :: Int
         , enhancement :: Enhancement
         , edition :: Edition
-        , seal :: Maybe Seal
+        , seal :: Seal
         }
     deriving (Read, Show, Generic, Hashable, ToJSON, FromJSON)
 
@@ -125,22 +126,22 @@ allSuits :: [Suit]
 allSuits = [Spade .. Diamond]
 
 mkBaseCard :: Rank -> Suit -> Card
-mkBaseCard r s = NormalCard{rank = r, suit = s, quantity = 1, enhancement = None, edition = Base, seal = Nothing}
+mkBaseCard r s = NormalCard{rank = r, suit = s, quantity = 1, enhancement = None, edition = Base, seal = NoneS}
 
 stdDeck :: Deck
-stdDeck = [mkBaseCard r s | r <- allRanks, s <- allSuits]
+stdDeck = mkBaseCard <$> allRanks <*> allSuits
 
 abandonedRanks :: [Rank]
 abandonedRanks = [Two .. Ten] ++ [Ace]
 
 abandonedDeck :: Deck
-abandonedDeck = [mkBaseCard r s | r <- abandonedRanks, s <- allSuits]
+abandonedDeck = mkBaseCard <$> abandonedRanks <*> allSuits
 
 checkeredSuits :: [Suit]
 checkeredSuits = [Spade, Heart]
 
 checkeredDeck :: Deck
-checkeredDeck = [mkBaseCard r s | r <- allRanks, s <- checkeredSuits]
+checkeredDeck = mkBaseCard <$> allRanks <*> checkeredSuits
 
 isEnhanced :: Enhancement -> Card -> Bool
 isEnhanced property = \case

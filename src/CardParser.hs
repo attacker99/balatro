@@ -6,17 +6,16 @@ module CardParser (
     Suit (..),
     Enhancement (..),
     Edition (..),
-    Seal (..)
+    Seal (..),
 ) where
 
-import Control.Applicative (optional)
+import Cards (Card (..), Edition (..), Enhancement (..), Rank (..), Seal (..), Suit (..))
 import Control.Monad (void)
 import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
 import Data.Void (Void)
 import Text.Megaparsec
 import Text.Megaparsec.Char (char, digitChar)
-import Cards (Card (..), Edition (..), Enhancement (..), Rank (..), Seal (..), Suit (..))
 
 type Parser = Parsec Void String
 
@@ -79,7 +78,8 @@ editionParser =
 sealParser :: Parser Seal
 sealParser =
     choice
-        [ GoldS <$ char 'y'
+        [ NoneS <$ char 'n'
+        , GoldS <$ char 'y'
         , Red <$ char 'r'
         , Blue <$ char 'b'
         , Purple <$ char 'p'
@@ -101,7 +101,7 @@ parseStoneCard = do
     qty <- option 1 quantityParser
     edt <- optional editionParser
     sl <- optional sealParser
-    pure $ StoneCard qty (fromMaybe Base edt) sl
+    pure $ StoneCard qty (fromMaybe Base edt) (fromMaybe NoneS sl)
 
 -- NormalCard: [rank][suit][maybe quantity][maybe enh][maybe edt][maybe seal]
 parseNormalCard :: Parser Card
@@ -112,4 +112,4 @@ parseNormalCard = do
     enh <- optional enhancementParser
     edt <- optional editionParser
     sl <- optional sealParser
-    pure $ NormalCard r s qty (fromMaybe None enh) (fromMaybe Base edt) sl
+    pure $ NormalCard r s qty (fromMaybe None enh) (fromMaybe Base edt) (fromMaybe NoneS sl)

@@ -1,28 +1,27 @@
 {-# LANGUAGE TupleSections #-}
+
 module Simulate where
 
-import Cards (Deck, Card(StoneCard, NormalCard, enhancement, edition, seal), Seal, Edition, Enhancement)
+import Cards (Card (NormalCard, StoneCard, edition, enhancement, seal), Deck, Edition, Enhancement, Seal)
 import Control.Concurrent.Async (replicateConcurrently)
-import Control.Monad (when, forM_)
+import Control.Monad (forM_, when)
+import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as MV
-import HandType (HandType (..), getHandType, Hand, Sz, Dist)
-import Data.Map.Strict (Map)
+import HandType (Dist, Hand, HandType (..), Sz, getHandType)
 import System.Random (randomRIO)
-import Data.Maybe (maybeToList)
 
 type SubHand = [Card]
 
-
 shuffle :: [Card] -> IO [Card]
 shuffle xs = do
-  let n = length xs
-  mvec <- V.thaw (V.fromList xs)  -- mutable vector
-  forM_ [0 .. n - 2] $ \i -> do
-    j <- randomRIO (i, n - 1)
-    MV.swap mvec i j
-  V.toList <$> V.freeze mvec
+    let n = length xs
+    mvec <- V.thaw (V.fromList xs) -- mutable vector
+    forM_ [0 .. n - 2] $ \i -> do
+        j <- randomRIO (i, n - 1)
+        MV.swap mvec i j
+    V.toList <$> V.freeze mvec
 
 simulate ::
     Deck ->
@@ -39,8 +38,7 @@ simulate deck hand fs_sz dist num_draw is_logged = do
         enhancements = [e | NormalCard{enhancement = e} <- newHand]
         editions = [e | NormalCard{edition = e} <- newHand] ++ [e | StoneCard{edition = e} <- newHand]
         seals =
-            [s | NormalCard{seal = s} <- newHand, s <- maybeToList s]
-                ++ [s | StoneCard{seal = s} <- newHand, s <- maybeToList s]
+            [s | NormalCard{seal = s} <- newHand] ++ [s | StoneCard{seal = s} <- newHand]
         stones = length [() | StoneCard{} <- newHand]
         enhancementStats = countElems enhancements
         editionStats = countElems editions

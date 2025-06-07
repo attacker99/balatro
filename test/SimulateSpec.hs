@@ -28,35 +28,35 @@ spec = do
             stringToCard "2d" `shouldBe` Just (mkBaseCard Two Diamond)
 
         it "parses cards with enhancements" $ do
-            stringToCard "Asb" `shouldBe` Just (NormalCard Ace Spade 1 Bonus Base Nothing)
-            stringToCard "Khm" `shouldBe` Just (NormalCard King Heart 1 Mult Base Nothing)
-            stringToCard "Qdw" `shouldBe` Just (NormalCard Queen Diamond 1 Wild Base Nothing)
-            stringToCard "Jcg" `shouldBe` Just (NormalCard Jack Club 1 Glass Base Nothing)
-            stringToCard "Tds" `shouldBe` Just (NormalCard Ten Diamond 1 Steel Base Nothing)
-            stringToCard "9hy" `shouldBe` Just (NormalCard Nine Heart 1 Gold Base Nothing)
-            stringToCard "8sl" `shouldBe` Just (NormalCard Eight Spade 1 Lucky Base Nothing)
-            stringToCard "7cn" `shouldBe` Just (NormalCard Seven Club 1 None Base Nothing)
+            stringToCard "Asb" `shouldBe` Just (NormalCard Ace Spade 1 Bonus Base NoneS)
+            stringToCard "Khm" `shouldBe` Just (NormalCard King Heart 1 Mult Base NoneS)
+            stringToCard "Qdw" `shouldBe` Just (NormalCard Queen Diamond 1 Wild Base NoneS)
+            stringToCard "Jcg" `shouldBe` Just (NormalCard Jack Club 1 Glass Base NoneS)
+            stringToCard "Tds" `shouldBe` Just (NormalCard Ten Diamond 1 Steel Base NoneS)
+            stringToCard "9hy" `shouldBe` Just (NormalCard Nine Heart 1 Gold Base NoneS)
+            stringToCard "8sl" `shouldBe` Just (NormalCard Eight Spade 1 Lucky Base NoneS)
+            stringToCard "7cn" `shouldBe` Just (NormalCard Seven Club 1 None Base NoneS)
 
         it "parses cards with editions" $ do
-            stringToCard "Asf" `shouldBe` Just (NormalCard Ace Spade 1 None Foil Nothing)
-            stringToCard "Khh" `shouldBe` Just (NormalCard King Heart 1 None Holographic Nothing)
-            stringToCard "Qdp" `shouldBe` Just (NormalCard Queen Diamond 1 None Polychrome Nothing)
-            stringToCard "Jcn" `shouldBe` Just (NormalCard Jack Club 1 None Base Nothing)
+            stringToCard "Asf" `shouldBe` Just (NormalCard Ace Spade 1 None Foil NoneS)
+            stringToCard "Khh" `shouldBe` Just (NormalCard King Heart 1 None Holographic NoneS)
+            stringToCard "Qdp" `shouldBe` Just (NormalCard Queen Diamond 1 None Polychrome NoneS)
+            stringToCard "Jcn" `shouldBe` Just (NormalCard Jack Club 1 None Base NoneS)
 
         it "parses cards with seals" $ do
-            stringToCard "Asy" `shouldBe` Just (NormalCard Ace Spade 1 None Base (Just GoldS))
-            stringToCard "Khr" `shouldBe` Just (NormalCard King Heart 1 None Base (Just Red))
-            stringToCard "Qdb" `shouldBe` Just (NormalCard Queen Diamond 1 None Base (Just Blue))
-            stringToCard "Jcp" `shouldBe` Just (NormalCard Jack Club 1 None Base (Just Purple))
-            stringToCard "Tdn" `shouldBe` Just (NormalCard Ten Diamond 1 None Base Nothing)
+            stringToCard "Asy" `shouldBe` Just (NormalCard Ace Spade 1 None Base GoldS)
+            stringToCard "Khr" `shouldBe` Just (NormalCard King Heart 1 None Base Red)
+            stringToCard "Qdb" `shouldBe` Just (NormalCard Queen Diamond 1 None Base Blue)
+            stringToCard "Jcp" `shouldBe` Just (NormalCard Jack Club 1 None Base Purple)
+            stringToCard "Tdn" `shouldBe` Just (NormalCard Ten Diamond 1 None Base NoneS)
 
         it "parses cards with 1 Multiple properties" $ do
-            stringToCard "Asbfy" `shouldBe` Just (NormalCard Ace Spade 1 Bonus Foil (Just GoldS))
-            stringToCard "Khmhr" `shouldBe` Just (NormalCard King Heart 1 Mult Holographic (Just Red))
-            stringToCard "Qdwp" `shouldBe` Just (NormalCard Queen Diamond 1 Wild Polychrome Nothing)
+            stringToCard "Asbfy" `shouldBe` Just (NormalCard Ace Spade 1 Bonus Foil GoldS)
+            stringToCard "Khmhr" `shouldBe` Just (NormalCard King Heart 1 Mult Holographic Red)
+            stringToCard "Qdwp" `shouldBe` Just (NormalCard Queen Diamond 1 Wild Polychrome NoneS)
 
         it "parses stone cards" $ do
-            stringToCard "s" `shouldBe` Just (StoneCard 1 Base Nothing)
+            stringToCard "s" `shouldBe` Just (StoneCard 1 Base NoneS)
 
         it "rejects invalid card codes" $ do
             stringToCard "Xx" `shouldBe` Nothing
@@ -69,11 +69,11 @@ spec = do
 
     describe "simulate" $ do
         it "returns valid statistics and hand type" $ do
-            let deck = [NormalCard Ace Spade 1 None Base Nothing,
-                       NormalCard King Heart 1 None Base Nothing,
-                       NormalCard Queen Diamond 1 None Base Nothing]
-            let hand = [NormalCard Ace Spade 1 None Base Nothing,
-                       NormalCard King Heart 1 None Base Nothing]
+            let deck = [NormalCard Ace Spade 1 None Base NoneS,
+                       NormalCard King Heart 1 None Base NoneS,
+                       NormalCard Queen Diamond 1 None Base NoneS]
+            let hand = [NormalCard Ace Spade 1 None Base NoneS,
+                       NormalCard King Heart 1 None Base NoneS]
             (enhStats, edStats, sealStats, stones, handType) <- simulate deck hand 5 1 1 False
             handType `shouldSatisfy` \ht -> ht `elem` allHandtypes
             Map.size enhStats `shouldSatisfy` (>= 0)
@@ -82,13 +82,13 @@ spec = do
             stones `shouldSatisfy` (>= 0)
 
         it "handles multiple draws correctly" $ do
-            let deck = [NormalCard Ace Spade 1 None Base Nothing,
-                       NormalCard King Heart 1 None Base Nothing,
-                       NormalCard Queen Diamond 1 None Base Nothing,
-                       NormalCard Jack Club 1 None Base Nothing,
-                       NormalCard Ten Spade 1 None Base Nothing]
-            let hand = [NormalCard Ace Spade 1 None Base Nothing,
-                       NormalCard King Heart 1 None Base Nothing]
+            let deck = [NormalCard Ace Spade 1 None Base NoneS,
+                       NormalCard King Heart 1 None Base NoneS,
+                       NormalCard Queen Diamond 1 None Base NoneS,
+                       NormalCard Jack Club 1 None Base NoneS,
+                       NormalCard Ten Spade 1 None Base NoneS]
+            let hand = [NormalCard Ace Spade 1 None Base NoneS,
+                       NormalCard King Heart 1 None Base NoneS]
             (enhStats, edStats, sealStats, stones, handType) <- simulate deck hand 5 2 1 False
             handType `shouldSatisfy` \ht -> ht `elem` allHandtypes
             Map.size enhStats `shouldSatisfy` (>= 0)
@@ -97,13 +97,13 @@ spec = do
             stones `shouldSatisfy` (>= 0)
 
         it "handles multiple free shop sizes correctly" $ do
-            let deck = [NormalCard Ace Spade 1 None Base Nothing,
-                       NormalCard King Heart 1 None Base Nothing,
-                       NormalCard Queen Diamond 1 None Base Nothing,
-                       NormalCard Jack Club 1 None Base Nothing,
-                       NormalCard Ten Spade 1 None Base Nothing]
-            let hand = [NormalCard Ace Spade 1 None Base Nothing,
-                       NormalCard King Heart 1 None Base Nothing]
+            let deck = [NormalCard Ace Spade 1 None Base NoneS,
+                       NormalCard King Heart 1 None Base NoneS,
+                       NormalCard Queen Diamond 1 None Base NoneS,
+                       NormalCard Jack Club 1 None Base NoneS,
+                       NormalCard Ten Spade 1 None Base NoneS]
+            let hand = [NormalCard Ace Spade 1 None Base NoneS,
+                       NormalCard King Heart 1 None Base NoneS]
             (enhStats, edStats, sealStats, stones, handType) <- simulate deck hand 5 1 2 False
             handType `shouldSatisfy` \ht -> ht `elem` allHandtypes
             Map.size enhStats `shouldSatisfy` (>= 0)
@@ -112,15 +112,15 @@ spec = do
             stones `shouldSatisfy` (>= 0)
 
         it "handles both multiple draws and free shop sizes" $ do
-            let deck = [NormalCard Ace Spade 1 None Base Nothing,
-                       NormalCard King Heart 1 None Base Nothing,
-                       NormalCard Queen Diamond 1 None Base Nothing,
-                       NormalCard Jack Club 1 None Base Nothing,
-                       NormalCard Ten Spade 1 None Base Nothing,
-                       NormalCard Nine Heart 1 None Base Nothing,
-                       NormalCard Eight Diamond 1 None Base Nothing]
-            let hand = [NormalCard Ace Spade 1 None Base Nothing,
-                       NormalCard King Heart 1 None Base Nothing]
+            let deck = [NormalCard Ace Spade 1 None Base NoneS,
+                       NormalCard King Heart 1 None Base NoneS,
+                       NormalCard Queen Diamond 1 None Base NoneS,
+                       NormalCard Jack Club 1 None Base NoneS,
+                       NormalCard Ten Spade 1 None Base NoneS,
+                       NormalCard Nine Heart 1 None Base NoneS,
+                       NormalCard Eight Diamond 1 None Base NoneS]
+            let hand = [NormalCard Ace Spade 1 None Base NoneS,
+                       NormalCard King Heart 1 None Base NoneS]
             (enhStats, edStats, sealStats, stones, handType) <- simulate deck hand 5 2 2 False
             handType `shouldSatisfy` \ht -> ht `elem` allHandtypes
             Map.size enhStats `shouldSatisfy` (>= 0)
@@ -130,11 +130,11 @@ spec = do
 
     describe "simulateMul" $ do
         it "returns valid statistics for multiple simulations" $ do
-            let deck = [NormalCard Ace Spade 1 None Base Nothing,
-                       NormalCard King Heart 1 None Base Nothing,
-                       NormalCard Queen Diamond 1 None Base Nothing]
-            let hand = [NormalCard Ace Spade 1 None Base Nothing,
-                       NormalCard King Heart 1 None Base Nothing]
+            let deck = [NormalCard Ace Spade 1 None Base NoneS,
+                       NormalCard King Heart 1 None Base NoneS,
+                       NormalCard Queen Diamond 1 None Base NoneS]
+            let hand = [NormalCard Ace Spade 1 None Base NoneS,
+                       NormalCard King Heart 1 None Base NoneS]
             (enhStats, edStats, sealStats, stones, handTypeStats) <- simulateMul deck hand 5 1 100 1 False
             Map.size enhStats `shouldSatisfy` (>= 0)
             Map.size edStats `shouldSatisfy` (>= 0)
@@ -144,11 +144,11 @@ spec = do
             sum (Map.elems handTypeStats) `shouldBe` 100
 
         it "handles stone cards correctly" $ do
-            let deck = [StoneCard 1 Base Nothing,
-                       NormalCard King Heart 1 None Base Nothing,
-                       NormalCard Queen Diamond 1 None Base Nothing]
-            let hand = [StoneCard 1 Base Nothing,
-                       NormalCard King Heart 1 None Base Nothing]
+            let deck = [StoneCard 1 Base NoneS,
+                       NormalCard King Heart 1 None Base NoneS,
+                       NormalCard Queen Diamond 1 None Base NoneS]
+            let hand = [StoneCard 1 Base NoneS,
+                       NormalCard King Heart 1 None Base NoneS]
             (enhStats, edStats, sealStats, stones, handTypeStats) <- simulateMul deck hand 5 1 100 1 False
             stones `shouldSatisfy` (>= 0)
             Map.size handTypeStats `shouldSatisfy` (>= 0)
