@@ -74,6 +74,7 @@ executable balatro-server
         , directory
         , filepath
         , scotty
+        , wai-middleware-static
     hs-source-dirs:   app
     default-language: Haskell2010
     ghc-options:      -Wall

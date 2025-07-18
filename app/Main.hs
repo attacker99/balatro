@@ -6,20 +6,21 @@
 
 module Main where
 
+import CardParser (stringToCard)
+import Cards
 import Data.Aeson (object, withObject, (.:), (.=))
 import qualified Data.Aeson as Aeson
+import qualified Data.Map as Map
 import GHC.Generics
+import HandType (HandType (..), getHandType)
 import Network.HTTP.Types (status400)
 import Network.Wai
 import Network.Wai.Middleware.Cors
+import Network.Wai.Middleware.Static (addBase, staticPolicy)
+import Simulate (simulateMul)
 import System.Directory (createDirectoryIfMissing, doesFileExist)
 import System.FilePath (takeExtension)
 import Web.Scotty
-import qualified Data.Map as Map
-import CardParser (stringToCard)
-import Cards
-import HandType (HandType (..), getHandType)
-import Simulate (simulateMul)
 
 data EvaluateRequest = EvaluateRequest
     { card_str :: String -- space-separated card string
@@ -77,6 +78,8 @@ main :: IO ()
 main = do
     createDirectoryIfMissing True "static"
     scotty 3000 $ do
+        middleware $ staticPolicy (addBase "static")
+        get "/" $ redirect "/index.html"
         -- Add CORS middleware
         middleware $
             cors $
@@ -85,8 +88,8 @@ main = do
                         simpleCorsResourcePolicy
                             { corsRequestHeaders = ["Content-Type", "Accept", "Origin", "Authorization"]
                             , corsMethods = ["GET", "POST", "OPTIONS"]
-                            , corsOrigins = Nothing  -- Allow all origins
-                            , corsMaxAge = Just 86400  -- Cache preflight for 24 hours
+                            , corsOrigins = Nothing -- Allow all origins
+                            , corsMaxAge = Just 86400 -- Cache preflight for 24 hours
                             , corsExposedHeaders = Just ["Content-Type", "Accept", "Access-Control-Allow-Origin"]
                             }
 
@@ -163,13 +166,14 @@ main = do
                     result <- liftIO $ simulateMul deck hand fs_sz dist num_sim num_draw is_logged
                     liftIO $ putStrLn $ "Simulation completed. Result: " ++ show result
                     let (enhStats, edStats, sealStats, stones, handTypeStats) = result
-                    let response = SimulateResponse
-                            { enhancementStats = Map.toList enhStats
-                            , editionStats = Map.toList edStats
-                            , sealStats = Map.toList sealStats
-                            , stones = stones
-                            , handTypeStats = Map.toList handTypeStats
-                            }
+                    let response =
+                            SimulateResponse
+                                { enhancementStats = Map.toList enhStats
+                                , editionStats = Map.toList edStats
+                                , sealStats = Map.toList sealStats
+                                , stones = stones
+                                , handTypeStats = Map.toList handTypeStats
+                                }
                     liftIO $ putStrLn $ "Sending response: " ++ show response
                     setHeader "Access-Control-Allow-Origin" "*"
                     setHeader "Access-Control-Allow-Methods" "GET, POST, OPTIONS"
